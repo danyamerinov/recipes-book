@@ -1,15 +1,15 @@
-/* Premium restaurant visual system: glass, warm shadows and scroll motion */
+/* Premium restaurant visual system with graceful fallbacks */
 :root {
   color-scheme: light;
   --bg: #fbf5ec;
-  --surface: rgba(255,255,255,.82);
+  --surface: rgba(255,255,255,.84);
   --text: #30221d;
   --text-muted: #806b61;
   --border: rgba(132,78,52,.16);
   --primary: #bd5635;
   --primary-dark: #843a25;
   --gold: #c99a55;
-  --glass: rgba(255,250,243,.74);
+  --glass: rgba(255,250,243,.76);
   --glass-border: rgba(255,255,255,.72);
   --premium-shadow: 0 24px 70px rgba(49,31,22,.13);
   --motion-ease: cubic-bezier(.2,.75,.22,1);
@@ -29,12 +29,11 @@ body {
 .btn--primary { background:linear-gradient(135deg,#d47c4c,#a9432b); box-shadow:0 10px 24px rgba(158,69,42,.22); }
 .btn--primary:hover { box-shadow:0 15px 32px rgba(158,69,42,.3); }
 .hero { min-height:620px; display:grid; align-items:center; }
-.hero__bg { transform:scale(1.05); background:linear-gradient(120deg,rgba(255,246,231,.93),rgba(245,207,174,.64)),url('https://images.unsplash.com/photo-149883 food?auto=format&fit=crop&w=1800&q=85'); background-image:linear-gradient(120deg,rgba(255,246,231,.92),rgba(245,207,174,.68)),url('https://images.unsplash.com/photo-149883 food?auto=format&fit=crop&w=1800&q=85'); background-image:linear-gradient(120deg,rgba(255,246,231,.92),rgba(245,207,174,.68)),url('https://images.unsplash.com/photo-149883 food?auto=format&fit=crop&w=1800&q=85'); }
-/* Valid photographic background (overrides the optional art layer above). */
-.hero__bg { background-image:linear-gradient(115deg,rgba(255,247,235,.91),rgba(246,215,190,.72)),url('https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1800&q=85'); background-size:cover; background-position:center; }
-.hero__content { padding:56px 28px; border:1px solid rgba(255,255,255,.62); border-radius:36px; background:rgba(255,252,247,.28); backdrop-filter:blur(6px); }
+/* Gradient remains visible if the remote background photo is unavailable. */
+.hero__bg { transform:scale(1.05); background-image:linear-gradient(115deg,rgba(255,247,235,.91),rgba(246,215,190,.72)),url('https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1800&q=85'); background-size:cover; background-position:center; }
+.hero__content { padding:56px 28px; border:1px solid rgba(255,255,255,.62); border-radius:36px; background:rgba(255,252,247,.35); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
 .hero__title { text-shadow:0 5px 30px rgba(82,51,33,.08); }
-.hero__stats .stat { min-width:105px; padding:14px 18px; border:1px solid rgba(255,255,255,.55); border-radius:18px; background:rgba(255,255,255,.38); backdrop-filter:blur(9px); }
+.hero__stats .stat { min-width:105px; padding:14px 18px; border:1px solid rgba(255,255,255,.55); border-radius:18px; background:rgba(255,255,255,.42); backdrop-filter:blur(9px); }
 .categories,.about { background:transparent; }
 .section-header { margin-bottom:42px; }
 .section-title { letter-spacing:-.035em; }
@@ -51,8 +50,6 @@ body {
 .about__content { padding:30px; border:1px solid var(--border); border-radius:28px; background:var(--glass); box-shadow:var(--premium-shadow); backdrop-filter:blur(14px); }
 .about__image-wrap { border:1px solid var(--glass-border); }
 .footer { background:linear-gradient(135deg,#35231c,#211815); }
-
-/* Refined glass recipe dialog */
 .modal { z-index:300; }
 .modal__overlay { background:rgba(25,18,15,.62); backdrop-filter:blur(0); transition:backdrop-filter .45s ease; }
 .modal--open .modal__overlay { backdrop-filter:blur(12px); }
@@ -62,13 +59,9 @@ body {
 .recipe-detail__section { box-shadow:0 12px 32px rgba(57,37,25,.045); }
 .recipe-detail__cuisine { background:rgba(201,154,85,.16); color:var(--primary-dark); }
 
-/* Scroll-linked depth and reveal; progressive enhancement for modern browsers */
+/* Progressive enhancement: scroll reveal and parallax only where supported. */
 @supports (animation-timeline:view()) {
-  .category-card,.recipe-card,.about__content,.about__image-wrap,.section-header {
-    animation:revealOnScroll linear both;
-    animation-timeline:view();
-    animation-range:entry 0% entry 45%;
-  }
+  .category-card,.recipe-card,.about__content,.about__image-wrap,.section-header { animation:revealOnScroll linear both; animation-timeline:view(); animation-range:entry 0% entry 45%; }
   .category-card:nth-child(even),.recipe-card:nth-child(even) { animation-range:entry 0% entry 55%; }
 }
 @supports (animation-timeline:scroll()) {
@@ -79,29 +72,20 @@ body {
 @keyframes heroParallax { to { transform:scale(1.18) translateY(8%); } }
 @keyframes heroContentParallax { to { transform:translateY(-28px); opacity:.82; } }
 
-/* Gentle dark mode, activated by the moon/sun button */
 :root.dark {
-  color-scheme:dark;
-  --bg:#171411;
-  --surface:rgba(38,33,29,.88);
-  --text:#f4e9dc;
-  --text-muted:#c0ad9d;
-  --border:rgba(231,194,158,.16);
-  --primary:#e28a62;
-  --primary-dark:#f0b18a;
-  --glass:rgba(34,30,26,.78);
-  --glass-border:rgba(255,239,219,.13);
-  --premium-shadow:0 24px 70px rgba(0,0,0,.28);
+  color-scheme:dark; --bg:#171411; --surface:rgba(38,33,29,.9); --text:#f4e9dc; --text-muted:#c0ad9d;
+  --border:rgba(231,194,158,.16); --primary:#e28a62; --primary-dark:#f0b18a; --glass:rgba(34,30,26,.82);
+  --glass-border:rgba(255,239,219,.13); --premium-shadow:0 24px 70px rgba(0,0,0,.28);
 }
 :root.dark body { background-image:radial-gradient(ellipse at 12% 18%,rgba(155,87,53,.18),transparent 34%),radial-gradient(ellipse at 89% 52%,rgba(136,102,61,.12),transparent 30%); }
 :root.dark .hero__bg { background-image:linear-gradient(115deg,rgba(24,20,17,.77),rgba(50,34,27,.73)),url('https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1800&q=85'); }
-:root.dark .hero__content { background:rgba(25,22,19,.35); border-color:rgba(255,255,255,.12); }
-:root.dark .navbar { background:rgba(26,23,20,.78); border-color:var(--glass-border); }
+:root.dark .hero__content { background:rgba(25,22,19,.52); border-color:rgba(255,255,255,.12); }
+:root.dark .navbar { background:rgba(26,23,20,.84); border-color:var(--glass-border); }
 :root.dark .navbar__menu { background:rgba(26,23,20,.97); }
-:root.dark .btn--ghost,.dark .btn--ghost { color:var(--text-muted); background:rgba(255,255,255,.04); border-color:var(--border); }
+:root.dark .btn--ghost { color:var(--text-muted); background:rgba(255,255,255,.04); border-color:var(--border); }
 :root.dark .nav-item { color:var(--text-muted); }
 :root.dark .nav-item--active { color:#fff; }
-:root.dark .recipe-card__badge { color:#f4e9dc; background:rgba(34,29,25,.8); }
+:root.dark .recipe-card__badge { color:#f4e9dc; background:rgba(34,29,25,.86); }
 :root.dark .recipe-detail__meta-item { background:rgba(255,255,255,.045)!important; }
 :root.dark .modal__container { background:linear-gradient(145deg,#2c2621,#201c19); border-color:rgba(255,255,255,.14); }
 :root.dark .modal__close { color:var(--text); background:rgba(255,255,255,.1); }
@@ -111,7 +95,6 @@ body {
 :root.dark .recipe-detail__cuisine { color:#f6c7a6; }
 :root.dark .search-input { color:var(--text); }
 :root.dark .search-input::placeholder { color:#b5a395; }
-
 @media (max-width:900px) { .hero { min-height:560px; } .hero__content { padding:42px 18px; } }
 @media (max-width:560px) { .hero { min-height:560px; padding:70px 0 95px; } .hero__content { padding:34px 14px; } .hero__stats { gap:10px; } .hero__stats .stat { min-width:88px; padding:10px; } .recipe-card__img-wrap { height:215px; } .about__content { padding:22px; } }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; } }
