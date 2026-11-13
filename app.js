@@ -15,12 +15,15 @@ let sortBy = 'popularity';
 
 // Инициализация Supabase
 function initSupabase() {
-  if (typeof supabaseJs === 'undefined' || !supabaseJs.createClient) {
+  const supabaseLib = window.supabase;
+
+  if (!supabaseLib || !supabaseLib.createClient) {
     console.warn('Supabase клиент не загружен');
     return;
   }
+
   try {
-    supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    supabase = supabaseLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     console.log('Supabase подключён');
   } catch (e) {
     console.error('Ошибка подключения Supabase:', e);
@@ -34,7 +37,6 @@ const recipeSearch = document.getElementById('recipeSearch');
 const recipeEmpty = document.getElementById('recipesEmpty');
 const modal = document.getElementById('recipeModal');
 const modalOverlay = document.getElementById('modalOverlay');
-const modalClose = document.getElementById('modalClose');
 const modalContent = document.getElementById('modalContent');
 const navItems = document.querySelectorAll('.nav-item');
 const shareBtn = document.getElementById('shareBtn');
@@ -56,7 +58,6 @@ const cuisineIcons = {
 
 // Генерация плейсхолдера изображения для рецепта
 function recipeImageUrl(title) {
-  // Используем Quellen с едой (без внешней зависимости при оффлайн)
   return `https://source.unsplash.com/featured/600x400/?${encodeURIComponent(title)},food`;
 }
 
@@ -173,13 +174,13 @@ function renderRecipes() {
   recipesGrid.innerHTML = '';
 
   if (filtered.length === 0) {
-    recipeEmpty.style.display = 'block';
+    if (recipeEmpty) recipeEmpty.style.display = 'block';
     recipesGrid.style.display = 'none';
     updateCounter();
     return;
   }
 
-  recipeEmpty.style.display = 'none';
+  if (recipeEmpty) recipeEmpty.style.display = 'none';
   recipesGrid.style.display = 'grid';
 
   filtered.forEach((recipe, index) => {
@@ -206,7 +207,6 @@ function renderRecipes() {
     recipesGrid.appendChild(card);
   });
 
-  // Запуск анимаций появления
   requestAnimationFrame(() => {
     document.querySelectorAll('.recipe-card.reveal-up').forEach((el, i) => {
       el.style.animationDelay = `${i * 0.06}s`;
@@ -220,15 +220,23 @@ function renderRecipes() {
 // Обновление счётчика
 function updateCounter() {
   if (!recipeCounter) return;
-  const visible = recipesGrid.style.display === 'none' ? 0 : recipesGrid.querySelectorAll('.recipe-card').length;
+  const visible = recipesGrid && recipesGrid.style.display === 'none'
+    ? 0
+    : recipesGrid.querySelectorAll('.recipe-card').length;
   recipeCounter.innerHTML = `Показано <span>${visible}</span> из <span>${allRecipes.length}</span>`;
+}
+
+function bindModalCloseButton() {
+  const closeBtn = document.getElementById('modalClose');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', closeModal);
+  }
 }
 
 // Открытие модального окна с рецептом
 async function openRecipeModal(recipe) {
   if (!modalContent) return;
 
-  // Увеличиваем просмотры (если Supabase)
   if (supabase && recipe.id) {
     try {
       await supabase
@@ -247,7 +255,7 @@ async function openRecipeModal(recipe) {
   const instructionsHtml = (recipe.instructions || '')
     .split(/\d+\.\s+/)
     .filter(s => s.trim())
-    .map((step, i) => `<li>${escapeHtml(step.trim())}</li>`)
+    .map(step => `<li>${escapeHtml(step.trim())}</li>`)
     .join('');
 
   modalContent.innerHTML = `
@@ -281,29 +289,30 @@ async function openRecipeModal(recipe) {
         <ol class="recipe-detail__instructions">${instructionsHtml}</ol>
       </div>
       <div class="recipe-detail__actions">
-        <button class="btn btn--primary" onclick="window.closeModal()">Закрыть</button>
+        <button class="btn btn--primary" type="button" onclick="window.closeModal()">Закрыть</button>
       </div>
     </div>
   `;
 
-  // Перевешиваем слушатель на новую кнопку закрытия
-  const newClose = document.getElementById('modalClose');
-  if (newClose) {
-    newClose.addEventListener('click', closeModal);
-  }
+  bindModalCloseButton();
 
-  modal.classList.add('modal--open');
-  document.body.style.overflow = 'hidden';
+  if (modal) {
+    modal.classList.add('modal--open');
+    document.body.style.overflow = 'hidden';
+  }
 }
 
 // Закрытие модального окна
 window.closeModal = function() {
-  modal.classList.remove('modal--open');
+  if (modal) {
+    modal.classList.remove('modal--open');
+  }
   document.body.style.overflow = '';
 };
 
-modalOverlay.addEventListener('click', closeModal);
-modalClose.addEventListener('click', closeModal);
+if (modalOverlay) {
+  modalOverlay.addEventListener('click', closeModal);
+}
 
 // Закрытие по клавише Esc
 document.addEventListener('keydown', (e) => {
@@ -321,31 +330,39 @@ navItems.forEach(item => {
 });
 
 // Поиск
-recipeSearch.addEventListener('input', (e) => {
-  searchQuery = e.target.value;
-  renderRecipes();
-});
+if (recipeSearch) {
+  recipeSearch.addEventListener('input', (e) => {
+    searchQuery = e.target.value;
+    renderRecipes();
+  });
+}
 
 // Сортировка
-sortBtn.addEventListener('click', () => {
-  sortBy = sortBy === 'popularity' ? 'title' : 'popularity';
-  const arrow = sortBtn.querySelector('.sort-arrow');
-  arrow.textContent = sortBy === 'popularity' ? '▾' : '↑';
-  renderRecipes();
-});
+if (sortBtn) {
+  sortBtn.addEventListener('click', () => {
+    sortBy = sortBy === 'popularity' ? 'title' : 'popularity';
+    const arrow = sortBtn.querySelector('.sort-arrow');
+    if (arrow) {
+      arrow.textContent = sortBy === 'popularity' ? '▾' : '↑';
+    }
+    renderRecipes();
+  });
+}
 
 // Поделиться ссылкой
-shareBtn.addEventListener('click', (e) => {
-  e.preventDefault();
-  const url = window.location.href;
-  if (navigator.share) {
-    navigator.share({ title: 'Кулинарная книга', text: 'Рецепты дома и мира', url });
-  } else {
-    navigator.clipboard.writeText(url).then(() => {
-      showToast('Ссылка скопирована в буфер обмена!');
-    });
-  }
-});
+if (shareBtn) {
+  shareBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({ title: 'Кулинарная книга', text: 'Рецепты дома и мира', url });
+    } else {
+      navigator.clipboard.writeText(url).then(() => {
+        showToast('Ссылка скопирована в буфер обмена!');
+      });
+    }
+  });
+}
 
 // Показать тост
 function showToast(message) {
@@ -358,27 +375,29 @@ function showToast(message) {
 }
 
 // Тема
-themeToggle.addEventListener('click', () => {
-  const isDark = document.documentElement.classList.toggle('dark');
-  themeToggle.textContent = isDark ? '☀️' : '🌙';
-  localStorage.setItem('theme', isDark ? 'dark' : 'light');
-});
+if (themeToggle) {
+  themeToggle.addEventListener('click', () => {
+    const isDark = document.documentElement.classList.toggle('dark');
+    themeToggle.textContent = isDark ? '☀️' : '🌙';
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  });
+}
 
 // Инициализация темы
 if (localStorage.getItem('theme') === 'dark') {
   document.documentElement.classList.add('dark');
-  themeToggle.textContent = '☀️';
+  if (themeToggle) themeToggle.textContent = '☀️';
 }
 
 // ===== Блок доступа только по ссылке =====
-// Проверяем наличие токена в ссылке (параметр ?token=...)
 function checkAccess() {
   const params = new URLSearchParams(window.location.search);
   const token = params.get('token');
   const banner = document.getElementById('accessBanner');
 
+  if (!banner || !recipesGrid || !recipeEmpty || !recipeCounter) return;
+
   if (token) {
-    // Токен передан — проверяем его (если Supabase доступен)
     if (supabase) {
       supabase
         .from('access_tokens')
@@ -396,16 +415,14 @@ function checkAccess() {
         })
         .catch(() => showAccessDenied());
     } else {
-      // Fallback — без Supabase разрешаем просмотр
       banner.style.display = 'none';
       loadRecipes();
     }
   } else {
-    // Без токена — показываем баннер, но рецепты не загружаем
     banner.style.display = 'flex';
     recipesGrid.style.display = 'none';
-    if (recipeEmpty) recipeEmpty.style.display = 'none';
-    if (recipeCounter) recipeCounter.innerHTML = 'Доступ ограничен. Перейдите по invite-ссылке.';
+    recipeEmpty.style.display = 'none';
+    recipeCounter.innerHTML = 'Доступ ограничен. Перейдите по invite-ссылке.';
   }
 }
 
@@ -429,7 +446,6 @@ window.addEventListener('DOMContentLoaded', () => {
   initSupabase();
   checkAccess();
 
-  // burger menu
   const burger = document.getElementById('navbarBurger');
   const menu = document.getElementById('navbarMenu');
   if (burger && menu) {
@@ -438,7 +454,6 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // hide scroll hint on first scroll
   window.addEventListener('scroll', () => {
     const scrollHint = document.querySelector('.hero__scroll');
     if (scrollHint && window.scrollY > 100) {
